@@ -1,5 +1,5 @@
 // Pure helpers of the reply-style mod: sanitising, chips, diagram runs, cell widths, table layout. No `$`, no I/O.
-// Copied from the squad po-inbox mod (hooks/po-inbox/core.ts) so this plugin stands alone.
+// Began as a copy of the squad po-inbox mod; it may now differ from it.
 
 // C0 and C1 controls incl. ESC and DEL, and the bidi overrides; \n and \t survive when `keepLayout`.
 function isControl(code: number, keepLayout: boolean): boolean {
@@ -32,14 +32,14 @@ export function oneLine(text: string): string {
 export const TONE = { good: 'success', bad: 'error', warn: 'warning' } as const
 export type Tone = 'good' | 'bad' | 'warn' | 'dim' | 'none'
 
-// Body styles (body-styles.md section 9): a fill is `inverse` + a theme colour; connectors are plain `permission` text.
+// Connectors and quiet text are `inactive`; a decision label is `permission`.
 export const ACCENT = 'permission'
 export const QUIET = 'inactive'
 export type ChipTone = 'good' | 'bad' | 'warn' | 'accent' | 'quiet'
 const CHIP_COLOR: Record<ChipTone, string> = { good: TONE.good, bad: TONE.bad, warn: TONE.warn, accent: ACCENT, quiet: QUIET }
 
-// The exact Ink props of a filled chip (9.1). Never `backgroundColor`, never `dimColor`.
-export const chipProps = (tone: ChipTone): { inverse: true; bold: true; color: string } => ({ inverse: true, bold: true, color: CHIP_COLOR[tone] })
+// The exact Ink props of a badge or callout label: bold and a theme colour. No fill (never `inverse`), never `backgroundColor`.
+export const badgeProps = (tone: ChipTone): { bold: true; color: string } => ({ bold: true, color: CHIP_COLOR[tone] })
 
 // Badge and callout words: tone and glyph. The glyph and the word both carry the meaning; colour is the second signal.
 export const CHIPS = {
@@ -48,17 +48,20 @@ export const CHIPS = {
 } as const satisfies Record<string, { tone: ChipTone; glyph: string }>
 export type ChipWord = keyof typeof CHIPS
 
-// U+00A0 around glyph and word: `wrap-ansi` breaks on a plain space only, so a chip never splits across two rows.
-export const chipText = (word: ChipWord): string => `\u00a0${CHIPS[word].glyph}\u00a0${word}\u00a0`
+// The drawn badge `✓ ok`: glyph, no-break space, word. It is as wide as the typed `[ok]` (word + 2). U+00A0 so a badge never
+// splits across two rows (`wrap-ansi` breaks on a plain space only).
+export const badgeText = (word: DiagramTag): string => `${CHIPS[word].glyph}\u00a0${word}`
+
+// Callout label text: `Decision:`, `Warning:`, `Info:`, `Recommended:`.
+export const calloutLabel = (word: 'decision' | 'warning' | 'info' | 'rec'): string => (word === 'rec' ? 'Recommended:' : `${word[0].toUpperCase()}${word.slice(1)}:`)
 
 // A box-drawing character: a fence holding one is a diagram.
 export const BOX_RE = /[\u2500-\u257f]/
 
 export type DiagramRun = { kind: 'name' | 'conn' | 'tag'; text: string }
-// The four state words: badges in prose, tags in a diagram, in the legend's order.
+// The four state words: badges in prose, tags in a diagram.
 export const DIAGRAM_TAGS = ['ok', 'warn', 'fail', 'skip'] as const
 export type DiagramTag = (typeof DIAGRAM_TAGS)[number]
-export const LEGEND_WORD: Record<DiagramTag, string> = { ok: 'done', warn: 'at risk', fail: 'failed', skip: 'skipped' }
 
 const isConnectorCode = (c: number): boolean =>
   (c >= 0x2500 && c <= 0x257f) || (c >= 0x2190 && c <= 0x21ff) || c === 0x25b2 || c === 0x25ba || c === 0x25bc || c === 0x25c4
@@ -118,14 +121,6 @@ export function diagramRuns(line: string): DiagramRun[] {
   }
   return runs
 }
-
-// The tags present in these diagram lines, in the order ok, warn, fail, skip (the legend's order).
-export function tagsOfRuns(lines: DiagramRun[][]): DiagramTag[] {
-  const seen = new Set<string>()
-  for (const l of lines) for (const r of l) if (r.kind === 'tag') seen.add(r.text.slice(1, -1))
-  return DIAGRAM_TAGS.filter((t) => seen.has(t))
-}
-export const legendTags = (lines: string[]): DiagramTag[] => tagsOfRuns(lines.map(diagramRuns))
 
 const inRanges = (c: number, r: number[][]): boolean => r.some(([a, b]) => c >= a && c <= b)
 const ZERO = [[0x300, 0x36f], [0x200b, 0x200f], [0x20d0, 0x20ff], [0xfe00, 0xfe0f], [0xfe20, 0xfe2f], [0xe0100, 0xe01ef]]
