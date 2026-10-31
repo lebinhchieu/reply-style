@@ -26,8 +26,9 @@ test('a summary block is left to the engine', async ($, on) => {
   await ui.unmount()
 })
 
-test('a diagram line draws its state tag as a chip and a legend', async ($) => {
+test('a diagram line draws its state tag as a badge and no legend', async ($) => {
   const ui = await $.ui.mount(MSG('```diagram flow\nlint --> test [ok]\n```'))
-  expect(await ui.find({ type: 'Text', text: /legend/ })).toBeTruthy()
+  expect(await ui.find({ type: 'Text', text: /✓.ok/ })).toBeTruthy()
+  expect(await ui.find({ type: 'Text', text: /legend/ })).toBeFalsy()
   await ui.unmount()
 })
