@@ -1,11 +1,16 @@
 {
   "name": "reply-style-marketplace",
-  "owner": { "name": "Chieu Le" },
+  "owner": {
+    "name": "Chieu Le"
+  },
+  "metadata": {
+    "description": "Marketplace for the reply-style Claude Code plugin."
+  },
   "plugins": [
     {
       "name": "reply-style",
       "source": "./",
-      "description": "Draws an agent's chat reply with highlighted tables, diagrams, state badges and callouts."
+      "description": "Draws an agent's chat reply with highlighted tables, diagrams, state badges and callouts (the squad PO inbox look), in any project."
     }
   ]
 }
