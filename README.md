@@ -15,7 +15,12 @@ The plugin also adds a short section to the system prompt so the model knows the
 
 ## Install
 
-Run `claude --plugin-dir /path/to/reply-style` to try it, or add the folder to a marketplace.
+```
+/plugin marketplace add lebinhchieu/reply-style
+/plugin install reply-style@reply-style-marketplace
+```
+
+To try it locally, run `claude --plugin-dir /path/to/reply-style`.
 
 ## Develop
 
