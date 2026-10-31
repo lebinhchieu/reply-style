@@ -1,0 +1,11 @@
+{
+  "name": "reply-style-marketplace",
+  "owner": { "name": "Chieu Le" },
+  "plugins": [
+    {
+      "name": "reply-style",
+      "source": "./",
+      "description": "Draws an agent's chat reply with highlighted tables, diagrams, state badges and callouts."
+    }
+  ]
+}

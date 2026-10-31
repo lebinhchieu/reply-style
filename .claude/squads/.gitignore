@@ -1,0 +1,10 @@
+*/scopes/*/roles/
+*/scopes/*/evidence/
+*/scopes/*/roster.md
+*/scopes/*/escalations.md
+*/goals/*/roles/
+*/goals/*/roster.md
+*/goals/*/escalations.md
+*.jsonl
+*/_runtime/
+_done/
