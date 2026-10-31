@@ -1,7 +1,7 @@
 import { expect, test } from 'claude-code/testing'
 
 import { badgeText, cellWidth, DIAGRAM_TAGS } from './core'
-import { drawBlock } from './draw'
+import { drawBlock, drawSpans } from './draw'
 import { parseBody } from './markup'
 
 // Bare stand-ins for the engine's components: enough to run the draw functions and read `rows`.
@@ -17,4 +17,11 @@ test('a table that fits stays aligned, one cell too many stacks', () => {
   const [table] = parseBody(TABLE)
   expect(drawBlock(table, 48, T, 'k').rows).toBe(6) // header, rule, 4 rows
   expect(drawBlock(table, 47, T, 'k').rows).toBeGreaterThan(6) // stacked records
+})
+
+test('inline code is bold in the permission colour, with no fill', () => {
+  const [el] = drawSpans([{ kind: 'code', text: 'x' } as any], T)
+  expect(el.props).toMatchObject({ bold: true, color: 'permission' })
+  expect(el.props.inverse).toBeUndefined()
+  expect(el.props.backgroundColor).toBeUndefined()
 })
