@@ -25,6 +25,15 @@ test('a badge or a callout line is styled, a badge inside a normal fence is not'
   expect(hasStyled(splitReply('```\n[ok]\n```'))).toBe(false)
 })
 
+test('a list with one badge item is one styled block, an all-plain list is not', () => {
+  const segs = splitReply('Intro\n\n- plain one\n- [ok] built\n- plain two\n\nOutro')
+  expect(segs.map((s) => s.kind)).toEqual(['md', 'styled', 'md'])
+  expect(segs[1].text).toBe('- plain one\n- [ok] built\n- plain two\n')
+  expect(hasStyled(splitReply('- plain one\n- plain two'))).toBe(false)
+  expect(splitReply('- a\n\n- [ok] b\n\n- c')).toHaveLength(1)
+  expect(splitReply('- item\n  ```\n  [ok] x\n  ```')[0].kind).toBe('md')
+})
+
 test('an unclosed fence keeps everything after it', () => {
   const segs = splitReply('```diagram\nA -> B\n[ok] done')
   expect(segs).toHaveLength(1)
