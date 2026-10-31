@@ -1,4 +1,4 @@
-// Pure helpers of the reply-style mod: sanitising, chips, diagram runs, cell widths, table layout. No `$`, no I/O.
+// Pure helpers of the reply-style mod: sanitising, badges, diagram runs, cell widths, table layout. No `$`, no I/O.
 // Began as a copy of the squad po-inbox mod; it may now differ from it.
 
 // C0 and C1 controls incl. ESC and DEL, and the bidi overrides; \n and \t survive when `keepLayout`.

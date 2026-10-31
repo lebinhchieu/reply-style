@@ -32,7 +32,7 @@ export function wrapCells(text: string, width: number): string[] {
 export const toneProps = (t: string): Record<string, unknown> =>
   t === 'good' ? { color: TONE.good } : t === 'bad' ? { color: TONE.bad } : t === 'warn' ? { color: TONE.warn } : t === 'dim' ? { dimColor: true } : {}
 
-// What a span list draws as plain text: a code chip is its text, no padding (the plain spaces of the sentence stay);
+// What a span list draws as plain text: inline code is its text, no padding (the plain spaces of the sentence stay);
 // a link is `label <url>` (a bare url is itself); a badge is `✓ ok`, as wide as the typed `[ok]`.
 const spanDrawn = (s: Span): string =>
   s.kind === 'link' ? (s.text === '' ? s.url : `${s.text} <${s.url}>`) : s.kind === 'badge' ? badgeText(s.text) : s.text
@@ -169,7 +169,7 @@ function drawDiagram(b: Extract<Block, { type: 'code' }>, cols: number, T: T, ke
   const W = Math.max(1, cols - 2)
   const lines = b.lines.map((l) => l.split('\t').join('    ').trimEnd())
   const widest = Math.max(...lines.map(cellWidth))
-  // Tags are read on the typed line; a line wider than W is cut to W - 1 cells plus `›`, so a cut tag is plain and a whole one keeps its chip.
+  // Tags are read on the typed line; a line wider than W is cut to W - 1 cells plus `›`, so a cut tag is plain and a whole one keeps its badge form.
   const shown: DiagramRun[][] = lines.map((l) => (cellWidth(l) > W ? [...cutRuns(diagramRuns(l), W - 1), { kind: 'name' as const, text: '›' }] : diagramRuns(l)))
   const out: any[] = []
   const caption = (DIAGRAM_LANG.test(b.lang) ? b.lang.slice('diagram'.length) : b.lang).trim()
@@ -215,9 +215,9 @@ export function drawBlock(b: Block, cols: number, T: T, key: string): Drawn {
       return { node: <Text key={key} {...props} wrap="wrap">{drawSpans(b.spans, T, key)}</Text>, rows: rowsFor(drawnText(b.spans), cols) }
     }
     case 'rec':
-      return calloutRow(b, 'success', 'rec', cols, T, key)
+      return calloutRow(b, TONE.good, 'rec', cols, T, key)
     case 'callout':
-      return calloutRow(b, CHIPS[b.tone].tone === 'accent' ? 'permission' : CHIPS[b.tone].tone === 'warn' ? TONE.warn : QUIET, b.tone, cols, T, key)
+      return calloutRow(b, badgeProps(CHIPS[b.tone].tone).color, b.tone, cols, T, key)
     case 'bullet':
     case 'number': {
       const indent = ' '.repeat(indentFor(b.depth, cols))
@@ -227,13 +227,13 @@ export function drawBlock(b: Block, cols: number, T: T, key: string): Drawn {
       const first = b.spans[0]
       if (b.type === 'bullet' && first !== undefined && first.kind === 'badge') {
         // A status bullet: the badge is padded to 6 cells plus one space, so the texts line up.
-        const pad = ' '.repeat(Math.max(0, 6 - cellWidth(badgeText(first.text))) + 1)
+        const pad = NBSP.repeat(Math.max(0, 6 - cellWidth(badgeText(first.text))) + 1)
         const rest = b.spans.slice(1)
         const head = rest[0]
         if (head !== undefined && head.kind === 'text') rest[0] = { ...head, text: head.text.replace(/^ /, '') }
         return {
           node: hanging(key, <Text key="m">{prefix}</Text>, pw, <Text key="t" wrap="wrap">{drawSpans([first], T, key)}{pad}{drawSpans(rest, T, `${key}r`)}</Text>, T),
-          rows: rowsFor(`${badgeText(first.text)}${pad.split(' ').join(NBSP)}${drawnText(rest)}`, Math.max(1, cols - pw)),
+          rows: rowsFor(`${badgeText(first.text)}${pad}${drawnText(rest)}`, Math.max(1, cols - pw)),
         }
       }
       return {
