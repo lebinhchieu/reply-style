@@ -15,8 +15,8 @@ const TABLE = '| Service | State | p95 | Note |\n|---|---|---|---|\n| api | [ok]
 
 test('a table that fits stays aligned, one cell too many stacks', () => {
   const [table] = parseBody(TABLE)
-  expect(drawBlock(table, 48, T, 'k').rows).toBe(6) // header, rule, 4 rows
-  expect(drawBlock(table, 47, T, 'k').rows).toBeGreaterThan(6) // stacked records
+  expect(drawBlock(table, 50, T, 'k').rows).toBe(6) // header, rule, 4 rows
+  expect(drawBlock(table, 49, T, 'k').rows).toBeGreaterThan(6) // stacked records
 })
 
 test('inline code is bold in the permission colour, with no fill', () => {
@@ -24,4 +24,14 @@ test('inline code is bold in the permission colour, with no fill', () => {
   expect(el.props).toMatchObject({ bold: true, color: 'permission' })
   expect(el.props.inverse).toBeUndefined()
   expect(el.props.backgroundColor).toBeUndefined()
+})
+
+test('a badge and a callout label are filled chips, and info is not the quiet grey', () => {
+  const [badge] = drawSpans([{ kind: 'badge', text: 'ok' } as any], T)
+  expect(badge.props).toMatchObject({ inverse: true, bold: true, color: 'success' })
+  expect(badge.props.backgroundColor).toBeUndefined()
+  const [info] = parseBody('[info] Build finished.')
+  const label = (drawBlock(info, 80, T, 'k').node as any).children.find((c: any) => c?.props?.inverse)
+  expect(label.props.color).not.toBe('inactive')
+  expect(label.props.color).toBe('planMode')
 })

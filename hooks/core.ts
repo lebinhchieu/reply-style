@@ -32,28 +32,35 @@ export function oneLine(text: string): string {
 export const TONE = { good: 'success', bad: 'error', warn: 'warning' } as const
 export type Tone = 'good' | 'bad' | 'warn' | 'dim' | 'none'
 
-// Connectors and quiet text are `inactive`; a decision label is `permission`.
+// Connectors and quiet text are `inactive`; a decision label is `permission`; an info label is `planMode`, a teal that is not
+// `permission` or `success`, so an info chip never reads as a decision, a pass or a skipped step. Change INFO here to retune it.
 export const ACCENT = 'permission'
+export const INFO = 'planMode'
 export const QUIET = 'inactive'
-export type ChipTone = 'good' | 'bad' | 'warn' | 'accent' | 'quiet'
-const CHIP_COLOR: Record<ChipTone, string> = { good: TONE.good, bad: TONE.bad, warn: TONE.warn, accent: ACCENT, quiet: QUIET }
+export type ChipTone = 'good' | 'bad' | 'warn' | 'accent' | 'info' | 'quiet'
+const CHIP_COLOR: Record<ChipTone, string> = { good: TONE.good, bad: TONE.bad, warn: TONE.warn, accent: ACCENT, info: INFO, quiet: QUIET }
 
-// The exact Ink props of a badge or callout label: bold and a theme colour. No fill (never `inverse`), never `backgroundColor`.
-export const badgeProps = (tone: ChipTone): { bold: true; color: string } => ({ bold: true, color: CHIP_COLOR[tone] })
+// The exact Ink props of a filled badge or callout label: `inverse` swaps colour and letters, so the fill is the theme
+// colour and the letters take the terminal's own background. Never `backgroundColor`, never `dimColor`.
+export const badgeProps = (tone: ChipTone): { inverse: true; bold: true; color: string } => ({ inverse: true, bold: true, color: CHIP_COLOR[tone] })
 
 // Badge and callout words: tone and glyph. The glyph and the word both carry the meaning; colour is the second signal.
 export const CHIPS = {
   ok: { tone: 'good', glyph: '✓' }, fail: { tone: 'bad', glyph: '✗' }, warn: { tone: 'warn', glyph: '⚠' }, skip: { tone: 'quiet', glyph: '–' },
-  decision: { tone: 'accent', glyph: '◆' }, warning: { tone: 'warn', glyph: '⚠' }, info: { tone: 'quiet', glyph: '›' },
+  decision: { tone: 'accent', glyph: '◆' }, warning: { tone: 'warn', glyph: '⚠' }, info: { tone: 'info', glyph: '›' },
 } as const satisfies Record<string, { tone: ChipTone; glyph: string }>
 export type ChipWord = keyof typeof CHIPS
 
-// The drawn badge `✓ ok`: glyph, no-break space, word. It is as wide as the typed `[ok]` (word + 2). U+00A0 so a badge never
-// splits across two rows (`wrap-ansi` breaks on a plain space only).
+// The badge in a diagram line: `✓ ok`, as wide as the typed `[ok]` (word + 2), so the diagram keeps its columns.
+// U+00A0 so a badge never splits across two rows (`wrap-ansi` breaks on a plain space only).
 export const badgeText = (word: DiagramTag): string => `${CHIPS[word].glyph}\u00a0${word}`
 
-// Callout label text: `Decision:`, `Warning:`, `Info:`, `Recommended:`.
-export const calloutLabel = (word: 'decision' | 'warning' | 'info' | 'rec'): string => (word === 'rec' ? 'Recommended:' : `${word[0].toUpperCase()}${word.slice(1)}:`)
+// A filled badge in prose, a table cell or a bullet: one no-break space of padding each side, ` ✓ ok `.
+export const chipText = (word: DiagramTag): string => `\u00a0${badgeText(word)}\u00a0`
+
+// A callout label chip: ` ◆ decision `, ` ⚠ warning `, ` › info `, ` ✓ recommended `.
+export const calloutChip = (word: 'decision' | 'warning' | 'info' | 'rec'): string =>
+  `\u00a0${word === 'rec' ? '✓' : CHIPS[word].glyph}\u00a0${word === 'rec' ? 'recommended' : word}\u00a0`
 
 // A box-drawing character: a fence holding one is a diagram.
 export const BOX_RE = /[\u2500-\u257f]/

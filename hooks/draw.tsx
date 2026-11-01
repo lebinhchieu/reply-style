@@ -1,7 +1,7 @@
 // Drawing of a reply's structured parts: inline spans, tables, diagrams, callouts. Began as a copy of the squad po-inbox mod.
-// Pure functions of props, no `$`. Colour is a theme key (TONE, ACCENT, QUIET) or weight only (V-15, V-18, body-styles.md 9.5). Every function that
+// Pure functions of props, no `$`. Colour is a theme key (TONE, ACCENT, INFO, QUIET) or weight only (V-15, V-18, body-styles.md 9.5). Every function that
 // draws rows also says how many rows it drew, by the same `rowsFor` the screen uses for its cut (T9 v3).
-import { ACCENT, badgeProps, badgeText, BOX_RE, calloutLabel, CHIPS, cellWidth, diagramRuns, QUIET, rowsFor, tableLayout, TONE, wrapRows } from './core'
+import { ACCENT, badgeProps, badgeText, BOX_RE, calloutChip, CHIPS, chipText, cellWidth, DIAGRAM_TAGS, diagramRuns, QUIET, rowsFor, tableLayout, TONE, wrapRows } from './core'
 import type { DiagramRun } from './core'
 import type { Block, Span } from './markup'
 
@@ -33,9 +33,9 @@ export const toneProps = (t: string): Record<string, unknown> =>
   t === 'good' ? { color: TONE.good } : t === 'bad' ? { color: TONE.bad } : t === 'warn' ? { color: TONE.warn } : t === 'dim' ? { dimColor: true } : {}
 
 // What a span list draws as plain text: inline code is its text, no padding (the plain spaces of the sentence stay);
-// a link is `label <url>` (a bare url is itself); a badge is `✓ ok`, as wide as the typed `[ok]`.
+// a link is `label <url>` (a bare url is itself); a badge is its padded chip ` ✓ ok `.
 const spanDrawn = (s: Span): string =>
-  s.kind === 'link' ? (s.text === '' ? s.url : `${s.text} <${s.url}>`) : s.kind === 'badge' ? badgeText(s.text) : s.text
+  s.kind === 'link' ? (s.text === '' ? s.url : `${s.text} <${s.url}>`) : s.kind === 'badge' ? chipText(s.text) : s.text
 const drawnText = (spans: Span[]): string => spans.map(spanDrawn).join('')
 
 export function drawSpans(spans: Span[], T: T, base = ''): any[] {
@@ -44,7 +44,7 @@ export function drawSpans(spans: Span[], T: T, base = ''): any[] {
     const key = `${base}s${i}`
     if (s.kind === 'bold') return <Text key={key} bold>{s.text}</Text>
     if (s.kind === 'code') return <Text key={key} bold color={ACCENT}>{s.text}</Text>
-    if (s.kind === 'badge') return <Text key={key} {...badgeProps(CHIPS[s.text].tone)}>{badgeText(s.text)}</Text>
+    if (s.kind === 'badge') return <Text key={key} {...badgeProps(CHIPS[s.text].tone)}>{chipText(s.text)}</Text>
     if (s.kind === 'link') {
       // The url is always shown: a pane cannot open it, and no escape sequence leaves the pane.
       return s.text === '' ? (
@@ -215,9 +215,9 @@ export function drawBlock(b: Block, cols: number, T: T, key: string): Drawn {
       return { node: <Text key={key} {...props} wrap="wrap">{drawSpans(b.spans, T, key)}</Text>, rows: rowsFor(drawnText(b.spans), cols) }
     }
     case 'rec':
-      return calloutRow(b, TONE.good, 'rec', cols, T, key)
+      return calloutRow(b, 'rec', cols, T, key)
     case 'callout':
-      return calloutRow(b, badgeProps(CHIPS[b.tone].tone).color, b.tone, cols, T, key)
+      return calloutRow(b, b.tone, cols, T, key)
     case 'bullet':
     case 'number': {
       const indent = ' '.repeat(indentFor(b.depth, cols))
@@ -226,14 +226,14 @@ export function drawBlock(b: Block, cols: number, T: T, key: string): Drawn {
       const pw = cellWidth(prefix)
       const first = b.spans[0]
       if (b.type === 'bullet' && first !== undefined && first.kind === 'badge') {
-        // A status bullet: the badge is padded to 6 cells plus one space, so the texts line up.
-        const pad = NBSP.repeat(Math.max(0, 6 - cellWidth(badgeText(first.text))) + 1)
+        // A status bullet: the chip is padded to the widest chip plus one space, so the texts line up.
+        const pad = NBSP.repeat(Math.max(0, STATUS_W - cellWidth(chipText(first.text))) + 1)
         const rest = b.spans.slice(1)
         const head = rest[0]
         if (head !== undefined && head.kind === 'text') rest[0] = { ...head, text: head.text.replace(/^ /, '') }
         return {
           node: hanging(key, <Text key="m">{prefix}</Text>, pw, <Text key="t" wrap="wrap">{drawSpans([first], T, key)}{pad}{drawSpans(rest, T, `${key}r`)}</Text>, T),
-          rows: rowsFor(`${badgeText(first.text)}${pad}${drawnText(rest)}`, Math.max(1, cols - pw)),
+          rows: rowsFor(`${chipText(first.text)}${pad}${drawnText(rest)}`, Math.max(1, cols - pw)),
         }
       }
       return {
@@ -253,24 +253,26 @@ export function drawBlock(b: Block, cols: number, T: T, key: string): Drawn {
 
 // A counted pad is no-break spaces: `rowsFor` drops plain ones.
 const NBSP = '\u00a0'
+// The widest filled badge, ` ✗ fail `: a status bullet pads the others to it.
+const STATUS_W = Math.max(...DIAGRAM_TAGS.map((t) => cellWidth(chipText(t))))
 
-// A callout or `[rec]` row: a glyph, then the bold label and the text; wrapped rows hang 2 cells in (the glyph's column).
-function calloutRow(b: { spans: Span[]; indent?: number }, color: string, word: 'decision' | 'warning' | 'info' | 'rec', cols: number, T: T, key: string): Drawn {
+// A callout or `[rec]` row: the label chip, then the text. The text wraps under column 0 of the row, as in the PO inbox.
+// `[decision]` and `[rec]` keep their sentence bold. `indent` is a counted pad of no-break spaces.
+function calloutRow(b: { spans: Span[]; indent?: number }, word: 'decision' | 'warning' | 'info' | 'rec', cols: number, T: T, key: string): Drawn {
   const { Text } = T
-  const glyph = word === 'rec' ? '✓' : CHIPS[word].glyph
-  const label = calloutLabel(word)
+  const chip = calloutChip(word)
   const rest = drawnText(b.spans)
-  const pad = Math.min(b.indent ?? 0, 8)
+  const pad = NBSP.repeat(Math.min(b.indent ?? 0, 8))
   const words = drawSpans(b.spans, T, key)
-  const content = (
-    <Text key="t" wrap="wrap">
-      <Text color={color} bold>{label}</Text>
-      {rest === '' ? null : ' '}
-      {word === 'decision' ? <Text bold>{words}</Text> : words}
-    </Text>
-  )
   return {
-    node: hanging(key, <Text key="g">{' '.repeat(pad)}<Text color={color} bold>{glyph}</Text></Text>, pad + 2, content, T),
-    rows: rowsFor(`${label}${rest === '' ? '' : ' '}${rest}`, Math.max(1, cols - pad - 2)),
+    node: (
+      <Text key={key} wrap="wrap">
+        {pad}
+        <Text {...badgeProps(word === 'rec' ? 'good' : CHIPS[word].tone)}>{chip}</Text>
+        {rest === '' ? null : ' '}
+        {word === 'decision' || word === 'rec' ? <Text bold>{words}</Text> : words}
+      </Text>
+    ),
+    rows: rowsFor(`${pad}${chip}${rest === '' ? '' : ' '}${rest}`, cols),
   }
 }
