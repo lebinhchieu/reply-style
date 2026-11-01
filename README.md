@@ -9,7 +9,7 @@ A Claude Code mod that draws an agent's chat reply with aligned tables, vertical
 - **Badges**: `[ok] [warn] [fail] [skip]` become filled badges ` ✓ ok `, ` ⚠ warn `, ` ✗ fail `, ` – skip ` in a table cell, bullet or sentence. A bullet list with a badge in any item is drawn as one status list.
 - **Callouts**: a line starting `[decision]`, `[warning]` or `[info]` gets a filled label chip (` ◆ decision `, ` ⚠ warning `, ` › info `); `[rec]` marks the recommended choice with ` ✓ recommended `.
 
-Colours are theme keys (`success`, `error`, `warning`, `permission`, `planMode`, `inactive`), never RGB, so the reply follows the user's theme. A reply with none of these is left to the engine. Text between styled parts is drawn by the engine's own markdown.
+Colours are theme keys (`success`, `error`, `warning`, `permission`, `planMode`, `ide`, `inactive`), never RGB, so the reply follows the user's theme. A reply with none of these is left to the engine. Text between styled parts is drawn by the engine's own markdown.
 
 The plugin also adds a short section to the system prompt so the model knows the syntax (`hooks/syntax.ts`).
 

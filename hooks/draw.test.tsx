@@ -19,9 +19,9 @@ test('a table that fits stays aligned, one cell too many stacks', () => {
   expect(drawBlock(table, 49, T, 'k').rows).toBeGreaterThan(6) // stacked records
 })
 
-test('inline code is bold in the permission colour, with no fill', () => {
+test('inline code is bold in the ide colour, with no fill', () => {
   const [el] = drawSpans([{ kind: 'code', text: 'x' } as any], T)
-  expect(el.props).toMatchObject({ bold: true, color: 'permission' })
+  expect(el.props).toMatchObject({ bold: true, color: 'ide' })
   expect(el.props.inverse).toBeUndefined()
   expect(el.props.backgroundColor).toBeUndefined()
 })

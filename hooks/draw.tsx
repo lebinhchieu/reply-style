@@ -1,7 +1,7 @@
 // Drawing of a reply's structured parts: inline spans, tables, diagrams, callouts. Began as a copy of the squad po-inbox mod.
-// Pure functions of props, no `$`. Colour is a theme key (TONE, ACCENT, INFO, QUIET) or weight only (V-15, V-18, body-styles.md 9.5). Every function that
+// Pure functions of props, no `$`. Colour is a theme key (TONE, INFO, CODE, QUIET) or weight only (V-15, V-18, body-styles.md 9.5). Every function that
 // draws rows also says how many rows it drew, by the same `rowsFor` the screen uses for its cut (T9 v3).
-import { ACCENT, badgeProps, badgeText, BOX_RE, calloutChip, CHIPS, chipText, cellWidth, DIAGRAM_TAGS, diagramRuns, QUIET, rowsFor, tableLayout, TONE, wrapRows } from './core'
+import { badgeProps, badgeText, BOX_RE, calloutChip, CHIPS, chipText, CODE, cellWidth, DIAGRAM_TAGS, diagramRuns, QUIET, rowsFor, tableLayout, TONE, wrapRows } from './core'
 import type { DiagramRun } from './core'
 import type { Block, Span } from './markup'
 
@@ -43,7 +43,7 @@ export function drawSpans(spans: Span[], T: T, base = ''): any[] {
   return spans.map((s, i) => {
     const key = `${base}s${i}`
     if (s.kind === 'bold') return <Text key={key} bold>{s.text}</Text>
-    if (s.kind === 'code') return <Text key={key} bold color={ACCENT}>{s.text}</Text>
+    if (s.kind === 'code') return <Text key={key} bold color={CODE}>{s.text}</Text>
     if (s.kind === 'badge') return <Text key={key} {...badgeProps(CHIPS[s.text].tone)}>{chipText(s.text)}</Text>
     if (s.kind === 'link') {
       // The url is always shown: a pane cannot open it, and no escape sequence leaves the pane.

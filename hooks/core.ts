@@ -36,6 +36,8 @@ export type Tone = 'good' | 'bad' | 'warn' | 'dim' | 'none'
 // `permission` or `success`, so an info chip never reads as a decision, a pass or a skipped step. Change INFO here to retune it.
 export const ACCENT = 'permission'
 export const INFO = 'planMode'
+// Inline code is bold in `ide`, with no fill.
+export const CODE = 'ide'
 export const QUIET = 'inactive'
 export type ChipTone = 'good' | 'bad' | 'warn' | 'accent' | 'info' | 'quiet'
 const CHIP_COLOR: Record<ChipTone, string> = { good: TONE.good, bad: TONE.bad, warn: TONE.warn, accent: ACCENT, info: INFO, quiet: QUIET }
