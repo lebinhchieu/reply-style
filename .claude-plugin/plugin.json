@@ -1,6 +1,6 @@
 {
   "name": "reply-style",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Draws an agent's chat reply with highlighted tables, diagrams, state badges and callouts (the squad PO inbox look), in any project.",
   "author": { "name": "Chieu Le" },
   "homepage": "https://github.com/lebinhchieu/reply-style",
