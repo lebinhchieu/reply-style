@@ -4,7 +4,6 @@ import { drawBlock } from './draw'
 import { parseBody } from './markup'
 import { sanitize } from './core'
 import { hasStyled, splitReply } from './segments'
-import { SYNTAX } from './syntax'
 
 const GUTTER = 2
 
@@ -34,11 +33,5 @@ export const register: Register = (on) => {
         <Box key="body" flexDirection="column" flexShrink={1}>{nodes}</Box>
       </Box>
     )
-  }).catch(($, e, next) => next(e))
-
-  // Tell the model the syntax that gets drawn.
-  on('prompt.compose', async ($, e, next) => {
-    const result = await next(e)
-    return { sections: [...result.sections, { id: 'reply-style:syntax', text: SYNTAX, scope: 'session' as const }] }
   }).catch(($, e, next) => next(e))
 }
