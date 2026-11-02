@@ -1,7 +1,7 @@
 // Splits a reply into stretches the engine's own markdown draws ('md') and stretches this mod draws ('styled'):
 // a table, a diagram fence, a callout or `[rec]` line, any line holding a state badge, and a whole bullet list when one item holds a badge. Pure: no `$`.
 import { BOX_RE } from './core'
-import { CALLOUTS, cellsOf, isFenceEnd, isSeparator, isSpace, parseInline } from './markup'
+import { CALLOUTS, MARKER_BULLET, cellsOf, isFenceEnd, isSeparator, isSpace, parseInline } from './markup'
 
 export type Segment = { kind: 'md' | 'styled'; text: string }
 
@@ -81,7 +81,7 @@ export function splitReply(text: string): Segment[] {
       }
       i = end
       const run = lines.slice(start, i)
-      add(run.some(hasBadge) ? 'styled' : 'md', run)
+      add(run.some((l) => hasBadge(l) || MARKER_BULLET.test(l.trim())) ? 'styled' : 'md', run)
       continue
     }
     add(isMarkerLine(trimmed) || hasBadge(line) ? 'styled' : 'md', [line])

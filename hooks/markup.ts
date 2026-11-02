@@ -196,6 +196,9 @@ function headingLine(line: string): Block | null {
   return body === '' ? null : { type: 'heading', level: h as 1 | 2 | 3, spans: parseInline(body) }
 }
 
+// A list marker ("- ", "1. ") in front of `[rec]` or a callout tag. The tag line is drawn without the marker.
+export const MARKER_BULLET = /^([-*+]|\d+[.)])\s+(?=\[(rec|decision|warning|info)\](\s|$))/
+
 // The body as blocks, one per source line except a fenced block or a table. Never throws.
 export function parseBody(text: string): Block[] {
   const lines = text.replace(BR, '\n').split('\r\n').join('\n').split('\r').join('\n').split('\n')
@@ -203,7 +206,7 @@ export function parseBody(text: string): Block[] {
   let i = 0
   while (i < lines.length) {
     const line = lines[i]
-    const trimmed = line.trim()
+    const trimmed = line.trim().replace(MARKER_BULLET, '')
     if (trimmed === '') {
       blocks.push({ type: 'blank' })
       i++

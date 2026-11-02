@@ -1,5 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
+import { parseBody } from './markup'
 import { hasStyled, splitReply } from './segments'
 
 test('plain prose and a normal code fence stay with the engine', () => {
@@ -32,6 +33,14 @@ test('a list with one badge item is one styled block, an all-plain list is not',
   expect(hasStyled(splitReply('- plain one\n- plain two'))).toBe(false)
   expect(splitReply('- a\n\n- [ok] b\n\n- c')).toHaveLength(1)
   expect(splitReply('- item\n  ```\n  [ok] x\n  ```')[0].kind).toBe('md')
+})
+
+test('a [rec] or callout tag behind a list marker is styled and drawn without the marker', () => {
+  expect(hasStyled(splitReply('- [rec] T6 + T7: Validated chip'))).toBe(true)
+  expect(hasStyled(splitReply('1. [info] side note'))).toBe(true)
+  expect(parseBody('- [rec] T6')[0]).toMatchObject({ type: 'rec' })
+  expect(parseBody('- [warning] risk')[0]).toMatchObject({ type: 'callout', tone: 'warning' })
+  expect(hasStyled(splitReply('- [recx] not a tag'))).toBe(false)
 })
 
 test('an unclosed fence keeps everything after it', () => {
