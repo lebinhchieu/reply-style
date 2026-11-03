@@ -49,20 +49,21 @@ export const badgeProps = (tone: ChipTone): { inverse: true; bold: true; color: 
 // Badge and callout words: tone and glyph. The glyph and the word both carry the meaning; colour is the second signal.
 export const CHIPS = {
   ok: { tone: 'good', glyph: '✓' }, fail: { tone: 'bad', glyph: '✗' }, warn: { tone: 'warn', glyph: '⚠' }, skip: { tone: 'quiet', glyph: '–' },
-  decision: { tone: 'accent', glyph: '◆' }, warning: { tone: 'warn', glyph: '⚠' }, info: { tone: 'info', glyph: '›' },
+  decision: { tone: 'accent', glyph: '◆' }, warning: { tone: 'warn', glyph: '⚠' }, info: { tone: 'info', glyph: '›' }, rec: { tone: 'good', glyph: '✓' },
 } as const satisfies Record<string, { tone: ChipTone; glyph: string }>
 export type ChipWord = keyof typeof CHIPS
 
 // The badge in a diagram line: `✓ ok`, as wide as the typed `[ok]` (word + 2), so the diagram keeps its columns.
 // U+00A0 so a badge never splits across two rows (`wrap-ansi` breaks on a plain space only).
-export const badgeText = (word: DiagramTag): string => `${CHIPS[word].glyph}\u00a0${word}`
+export const badgeText = (word: InlineWord): string => `${CHIPS[word].glyph}\u00a0${word}`
 
 // A filled badge in prose, a table cell or a bullet: one no-break space of padding each side, ` ✓ ok `.
-export const chipText = (word: DiagramTag): string => `\u00a0${badgeText(word)}\u00a0`
+// A callout word in mid-line is the same kind of chip, ` › info `; `rec` stays short there (` ✓ rec `).
+export const chipText = (word: InlineWord): string => `\u00a0${badgeText(word)}\u00a0`
 
 // A callout label chip: ` ◆ decision `, ` ⚠ warning `, ` › info `, ` ✓ recommended `.
 export const calloutChip = (word: 'decision' | 'warning' | 'info' | 'rec'): string =>
-  `\u00a0${word === 'rec' ? '✓' : CHIPS[word].glyph}\u00a0${word === 'rec' ? 'recommended' : word}\u00a0`
+  `\u00a0${CHIPS[word].glyph}\u00a0${word === 'rec' ? 'recommended' : word}\u00a0`
 
 // A box-drawing character: a fence holding one is a diagram.
 export const BOX_RE = /[\u2500-\u257f]/
@@ -71,6 +72,9 @@ export type DiagramRun = { kind: 'name' | 'conn' | 'tag'; text: string }
 // The four state words: badges in prose, tags in a diagram.
 export const DIAGRAM_TAGS = ['ok', 'warn', 'fail', 'skip'] as const
 export type DiagramTag = (typeof DIAGRAM_TAGS)[number]
+// Words that become a chip anywhere in a line: the four state words and the four callout words.
+export const INLINE_WORDS = [...DIAGRAM_TAGS, 'decision', 'warning', 'info', 'rec'] as const
+export type InlineWord = (typeof INLINE_WORDS)[number]
 
 const isConnectorCode = (c: number): boolean =>
   (c >= 0x2500 && c <= 0x257f) || (c >= 0x2190 && c <= 0x21ff) || c === 0x25b2 || c === 0x25ba || c === 0x25bc || c === 0x25c4

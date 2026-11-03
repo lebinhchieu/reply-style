@@ -2,11 +2,11 @@
 // Total and linear: every line is looked at a bounded number of times, an unmatched opener is searched for once,
 // and a line that matches nothing is a plain paragraph. Each element drops only its own syntax characters.
 
-import { DIAGRAM_TAGS } from './core'
-import type { DiagramTag } from './core'
+import { INLINE_WORDS } from './core'
+import type { InlineWord } from './core'
 
-// A link is `[label](url)` or a bare url (`text` ''); a badge is `[ok]`, `[fail]`, `[warn]` or `[skip]` (`text` is the word).
-export type BadgeWord = DiagramTag
+// A link is `[label](url)` or a bare url (`text` ''); a badge is `[ok]`, `[fail]`, `[warn]`, `[skip]` or a callout word such as `[info]` in mid-line (`text` is the word).
+export type BadgeWord = InlineWord
 export type CalloutTone = 'decision' | 'warning' | 'info'
 export type Span =
   | { kind: 'text' | 'bold' | 'code'; text: string }
@@ -26,7 +26,7 @@ export type Block =
 
 const BR = /<br\s*\/?>/gi
 
-const BADGES: readonly string[] = DIAGRAM_TAGS
+const BADGES: readonly string[] = INLINE_WORDS
 export const CALLOUTS: CalloutTone[] = ['decision', 'warning', 'info']
 const isHttp = (u: string) => u.startsWith('http://') || u.startsWith('https://')
 

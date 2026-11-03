@@ -1,6 +1,7 @@
 import { expect, test } from 'claude-code/testing'
 
-import { parseBody } from './markup'
+import { chipText } from './core'
+import { parseBody, parseInline } from './markup'
 import { hasStyled, splitReply } from './segments'
 
 test('plain prose and a normal code fence stay with the engine', () => {
@@ -41,6 +42,15 @@ test('a [rec] or callout tag behind a list marker is styled and drawn without th
   expect(parseBody('- [rec] T6')[0]).toMatchObject({ type: 'rec' })
   expect(parseBody('- [warning] risk')[0]).toMatchObject({ type: 'callout', tone: 'warning' })
   expect(hasStyled(splitReply('- [recx] not a tag'))).toBe(false)
+})
+
+test('a callout word in mid-line is a chip, and rec is short there', () => {
+  const line = '- Upstream: [info] 0 operations are marked [rec] done'
+  expect(hasStyled(splitReply(line))).toBe(true)
+  const spans = parseBody(line)[0] as { spans: unknown[] }
+  expect(spans.spans).toMatchObject([{ kind: 'text' }, { kind: 'badge', text: 'info' }, { kind: 'text' }, { kind: 'badge', text: 'rec' }, { kind: 'text' }])
+  expect(chipText('rec')).toBe('\u00a0✓\u00a0rec\u00a0')
+  expect(parseInline('see `[info]` here').some((x) => x.kind === 'badge')).toBe(false)
 })
 
 test('an unclosed fence keeps everything after it', () => {
