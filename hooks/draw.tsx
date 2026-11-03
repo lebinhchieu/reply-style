@@ -1,7 +1,7 @@
 // Drawing of a reply's structured parts: inline spans, tables, diagrams, callouts. Began as a copy of the squad po-inbox mod.
 // Pure functions of props, no `$`. Colour is a theme key (TONE, INFO, CODE, QUIET) or weight only (V-15, V-18, body-styles.md 9.5). Every function that
 // draws rows also says how many rows it drew, by the same `rowsFor` the screen uses for its cut (T9 v3).
-import { badgeProps, badgeText, BOX_RE, calloutChip, CHIPS, chipText, CODE, cellWidth, DIAGRAM_TAGS, diagramRuns, QUIET, rowsFor, tableLayout, TONE, wrapRows } from './core'
+import { badgeProps, badgeText, BOX_RE, calloutChip, CHIPS, chipText, CODE, cellWidth, DIAGRAM_TAGS, diagramRuns, QUIET, rowsFor, STRIPE, tableLayout, TONE, wrapRows } from './core'
 import type { DiagramRun } from './core'
 import type { Block, Span } from './markup'
 
@@ -86,20 +86,30 @@ function drawTable(b: Extract<Block, { type: 'table' }>, cols: number, T: T, key
   let n = 0
   if (lay.kind === 'aligned') {
     // One Text per row, one child per cell, so a badge cell keeps its colour; the last non-empty cell has no padding.
-    const row = (k: string, cells: Span[][], props: Record<string, unknown>) => {
+    // `stripe` fills the row with the STRIPE theme background (every second body row). A stripe row is padded to the full
+    // table width so the band is even, but only when that stays under `cols`: a row as wide as the pane may wrap early.
+    const total = lay.widths.reduce((x, y) => x + y, 0) + 2 * Math.max(0, lay.widths.length - 1)
+    const row = (k: string, cells: Span[][], props: Record<string, unknown>, stripe = false) => {
       let last = lay.widths.length - 1
       while (last > 0 && drawnText(cells[last] ?? []) === '') last--
       const parts: any[] = []
+      let used = 0
       for (let i = 0; i <= last; i++) {
         const sp = cells[i] ?? []
         parts.push(...drawSpans(sp, T, `${k}c${i}`))
-        if (i < last) parts.push(' '.repeat(Math.max(0, lay.widths[i] - cellWidth(drawnText(sp))) + 2))
+        used += cellWidth(drawnText(sp))
+        if (i < last) {
+          const pad = Math.max(0, lay.widths[i] - cellWidth(drawnText(sp))) + 2
+          parts.push(' '.repeat(pad))
+          used += pad
+        }
       }
+      if (stripe && total < cols) parts.push(' '.repeat(Math.max(0, total - used)))
       return <Text key={k} wrap="wrap" {...props}>{parts}</Text>
     }
     out.push(row('h', b.header, { bold: true }))
     out.push(<Text key="r" wrap="wrap">{lay.widths.map((w) => '─'.repeat(w)).join('  ')}</Text>)
-    b.rows.forEach((r, i) => out.push(row(`t${i}`, r, {})))
+    b.rows.forEach((r, i) => out.push(row(`t${i}`, r, i % 2 === 1 ? { backgroundColor: STRIPE } : {}, i % 2 === 1)))
     n = 2 + rows.length
   } else {
     const width = Math.max(header.length, ...rows.map((r) => r.length))

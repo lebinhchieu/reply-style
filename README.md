@@ -4,7 +4,7 @@ A Claude Code mod that draws an agent's chat reply with aligned tables, vertical
 
 ## What it draws
 
-- **Tables**: aligned columns with a rule under the header; stacked `column: value` rows when the terminal is narrow.
+- **Tables**: aligned columns with a rule under the header, every second body row on a `bashMessageBackgroundColor` stripe; stacked `column: value` rows when the terminal is narrow.
 - **Diagrams**: a fence labelled `diagram`, or any fence with box-drawing characters. The model draws them vertical, at most 44 columns wide, one step per row joined by `▼`. Connectors are coloured. There is no legend.
 - **Badges**: `[ok] [warn] [fail] [skip]` become filled badges ` ✓ ok `, ` ⚠ warn `, ` ✗ fail `, ` – skip ` in a table cell, bullet or sentence. A bullet list with a badge in any item is drawn as one status list. `[decision]`, `[warning]`, `[info]` and `[rec]` in the middle of a line are drawn as small chips (` ✓ rec ` for `[rec]`).
 - **Callouts**: a line starting `[decision]`, `[warning]` or `[info]` (a list marker such as `- ` in front is fine) gets a filled label chip (` ◆ decision `, ` ⚠ warning `, ` › info `); `[rec]` marks the recommended choice with ` ✓ recommended `.

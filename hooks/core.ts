@@ -39,11 +39,13 @@ export const INFO = 'planMode'
 // Inline code is bold in `ide`, with no fill.
 export const CODE = 'ide'
 export const QUIET = 'inactive'
+// The one background fill outside a badge: every second body row of an aligned table. A theme key, so it follows the user's theme.
+export const STRIPE = 'bashMessageBackgroundColor'
 export type ChipTone = 'good' | 'bad' | 'warn' | 'accent' | 'info' | 'quiet'
 const CHIP_COLOR: Record<ChipTone, string> = { good: TONE.good, bad: TONE.bad, warn: TONE.warn, accent: ACCENT, info: INFO, quiet: QUIET }
 
 // The exact Ink props of a filled badge or callout label: `inverse` swaps colour and letters, so the fill is the theme
-// colour and the letters take the terminal's own background. Never `backgroundColor`, never `dimColor`.
+// colour and the letters take the terminal's own background. Never `dimColor`; a badge sets no `backgroundColor` (only STRIPE does, on a table row).
 export const badgeProps = (tone: ChipTone): { inverse: true; bold: true; color: string } => ({ inverse: true, bold: true, color: CHIP_COLOR[tone] })
 
 // Badge and callout words: tone and glyph. The glyph and the word both carry the meaning; colour is the second signal.

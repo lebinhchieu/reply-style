@@ -19,6 +19,14 @@ test('a table that fits stays aligned, one cell too many stacks', () => {
   expect(drawBlock(table, 49, T, 'k').rows).toBeGreaterThan(6) // stacked records
 })
 
+test('every second table row has the stripe background, the others and the badges have none', () => {
+  const [table] = parseBody(TABLE)
+  const rows = drawBlock(table, 50, T, 'k').parts as any[]
+  expect(rows.slice(2).map((r) => r.props.backgroundColor)).toEqual([undefined, 'bashMessageBackgroundColor', undefined, 'bashMessageBackgroundColor'])
+  const badge = [rows[3].children].flat(2).find((c: any) => c?.props?.inverse)
+  expect(badge.props.backgroundColor).toBeUndefined()
+})
+
 test('inline code is bold in the ide colour, with no fill', () => {
   const [el] = drawSpans([{ kind: 'code', text: 'x' } as any], T)
   expect(el.props).toMatchObject({ bold: true, color: 'ide' })
