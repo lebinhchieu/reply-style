@@ -1,7 +1,8 @@
 // Drawing of a reply's structured parts: inline spans, tables, diagrams, callouts. Began as a copy of the squad po-inbox mod.
 // Pure functions of props, no `$`. Colour is a theme key (TONE, INFO, CODE, QUIET) or weight only (V-15, V-18, body-styles.md 9.5). Every function that
 // draws rows also says how many rows it drew, by the same `rowsFor` the screen uses for its cut (T9 v3).
-import { badgeProps, badgeText, BOX_RE, calloutChip, CHIPS, chipText, CODE, cellWidth, DIAGRAM_TAGS, diagramRuns, QUIET, rowsFor, STRIPE, tableLayout, TONE, wrapRows } from './core'
+import { parseBody } from './markup'
+import { badgeProps, badgeText, BOX_RE, calloutChip, CHIPS, chipText, CODE, cellWidth, DIAGRAM_TAGS, diagramRuns, QUIET, rowsFor, sanitize, STRIPE, tableLayout, TONE, wrapRows } from './core'
 import type { DiagramRun } from './core'
 import type { Block, Span } from './markup'
 
@@ -285,4 +286,58 @@ function calloutRow(b: { spans: Span[]; indent?: number }, word: 'decision' | 'w
     ),
     rows: rowsFor(`${pad}${chip}${rest === '' ? '' : ' '}${rest}`, cols),
   }
+}
+
+// --- working notes: the quiet look (ui-design/02.md) ----------------------------------------------------------------------
+// A note is the same layout as output with every part flat: plain text, `dimColor`, no fill, no weight, no colour.
+
+const flat = (spans: Span[]): Span[] => spans.map((s): Span => (s.kind === 'badge' ? { kind: 'text', text: badgeText(s.text) } : s.kind === 'link' ? s : { kind: 'text', text: s.text }))
+const flatCell = (cells: Span[][]): Span[][] => cells.map(flat)
+
+// The block with its styled parts turned into plain text: a badge is `✓ ok` (no padding), a callout `› info` then its sentence.
+export function quietBlock(b: Block): Block {
+  switch (b.type) {
+    case 'blank':
+    case 'code':
+      return b
+    case 'heading':
+      return { type: 'para', spans: flat(b.spans) }
+    case 'rec':
+      return { type: 'para', spans: [{ kind: 'text', text: `${badgeText('rec').replace('rec', 'recommended')}${b.spans.length ? ' ' : ''}` }, ...flat(b.spans)] }
+    case 'callout':
+      return { type: 'para', spans: [{ kind: 'text', text: `${badgeText(b.tone)}${b.spans.length ? ' ' : ''}` }, ...flat(b.spans)] }
+    case 'table':
+      return { type: 'table', header: flatCell(b.header), rows: b.rows.map(flatCell) }
+    default:
+      return { ...b, spans: flat(b.spans) }
+  }
+}
+
+const LOUD = ['bold', 'italic', 'underline', 'inverse', 'color', 'backgroundColor']
+
+// The element tree with every Text dim and plain. `Text` is the component the tree was drawn with.
+export function quietNode(node: any, Text: any): any {
+  if (Array.isArray(node)) return node.map((n) => quietNode(n, Text))
+  if (node === null || typeof node !== 'object' || !('type' in node)) return node
+  const props: Record<string, unknown> = { ...node.props }
+  const isText = node.type === Text || node.type === 'Text'
+  if (isText) for (const k of LOUD) delete props[k]
+  if (isText) props.dimColor = true
+  // The engine's elements hold their children beside `props`, not in it.
+  return { ...node, props, ...('children' in node ? { children: quietNode(node.children, Text) } : {}) }
+}
+
+// A whole note block: the gutter `· ` (inactive) on its first row, the body dim.
+export function drawNote(text: string, cols: number, T: T): any {
+  const { Box, Text } = T
+  const blocks = parseBody(sanitize(text)).map(quietBlock)
+  const body = blocks.map((b, j) => quietNode(drawBlock(b, cols, T, `n${j}`).node, Text))
+  return (
+    <Box flexDirection="row">
+      <Box key="gutter" width={2} flexShrink={0}>
+        <Text color={QUIET}>{'· '}</Text>
+      </Box>
+      <Box key="body" flexDirection="column" flexShrink={1}>{body}</Box>
+    </Box>
+  )
 }

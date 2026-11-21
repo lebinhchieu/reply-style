@@ -32,3 +32,14 @@ test('a diagram line draws its state tag as a badge and no legend', async ($) =>
   expect(await ui.find({ type: 'Text', text: /legend/ })).toBeFalsy()
   await ui.unmount()
 })
+
+test('the model stream goes through unchanged, also when marking fails', async ($, on) => {
+  const result = { turnId: 't1', index: 0, answer: 'I will read.', toolUses: [{ id: 'u1', name: 'Read', input: {} }], stopReason: 'tool_use', usage: null } as const
+  const chunks = [{ kind: 'text', ref: 1, index: 0, text: 'I will ' }, { kind: 'text', ref: 3, index: 0, text: 'read.' }] as const
+  on('turn.step', async function* () { yield* chunks; return result })
+  on('state.set', () => { throw new Error('write failed') })
+  const out: unknown[] = []
+  const stream = $.turn.step({ turnId: 't1', index: 0, model: 'm', messageCount: 1 } as any)
+  for await (const c of stream) out.push(c)
+  expect(out).toEqual([...chunks])
+})
