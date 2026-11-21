@@ -8,8 +8,11 @@ A Claude Code mod that draws an agent's chat reply with aligned tables, vertical
 - **Diagrams**: a fence labelled `diagram`, or any fence with box-drawing characters. The model draws them vertical, at most 44 columns wide, one step per row joined by `▼`. Connectors are coloured. There is no legend.
 - **Badges**: `[ok] [warn] [fail] [skip]` become filled badges ` ✓ ok `, ` ⚠ warn `, ` ✗ fail `, ` – skip ` in a table cell, bullet or sentence. A bullet list with a badge in any item is drawn as one status list. `[decision]`, `[warning]`, `[info]` and `[rec]` in the middle of a line are drawn as small chips (` ✓ rec ` for `[rec]`).
 - **Callouts**: a line starting `[decision]`, `[warning]` or `[info]` (a list marker such as `- ` in front is fine) gets a filled label chip (` ◆ decision `, ` ⚠ warning `, ` › info `); `[rec]` marks the recommended choice with ` ✓ recommended `.
+- **Working notes**: a text block the model writes before a tool call is a working note. It is drawn small and quiet (no fills, no chips) so you can skip it, and it is never shortened or removed. The engine says which blocks are notes (the model step ended in a tool call), so no tag is needed. A block while it streams is drawn as output and goes quiet once the tool call starts. The text before `AskUserQuestion` or `ExitPlanMode`, the last text of a turn and any block the mod cannot class are drawn as output. When in doubt, a block is output, never a note.
 
-Colours are theme keys (`success`, `error`, `warning`, `permission`, `planMode`, `ide`, `inactive`), never RGB, so the reply follows the user's theme. A reply with none of these is left to the engine. Text between styled parts is drawn by the engine's own markdown.
+Limits: text from a session you resumed has no step record and is drawn as output. A question written before a tool that raises a permission prompt is drawn as a note; the rule below tells the model to ask in the output instead.
+
+Colours are theme keys (`success`, `error`, `warning`, `permission`, `planMode`, `ide`, `inactive`), never RGB, so the reply follows the user's theme. Output with none of these forms is left to the engine. A working note is always drawn in the quiet style, whether or not it holds a styled part. Text between styled parts is drawn by the engine's own markdown.
 
 The plugin only draws. It does not tell the model which syntax to write: do that in your `CLAUDE.md` (see Set up the rule).
 
@@ -41,6 +44,7 @@ The chat draws some markdown in a richer style. This is required in every reply 
 - Callout: a line that starts with [decision], [warning] or [info]. One idea per line.
 - Recommended choice: a line that starts with [rec].
 - One tag per meaning. Never write colour words. Write the state in words too ([fail] Lint: 3 errors), since colour is only a second signal.
+- Working notes: text you write before a tool call is drawn small and quiet, so the user may skip it. Never put a fact the user needs only there. Your last text in a turn is the output the user reads: repeat every result, finding, number, risk and decision in it. Ask a question or request a decision in that output, not before a tool call.
 - Do not nest these inside code fences other than a diagram fence.
 ```
 
