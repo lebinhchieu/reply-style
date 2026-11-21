@@ -55,3 +55,24 @@ export function noteTracker() {
     },
   }
 }
+
+// The last `isSummary` block drawn in the turn (its `requestId`): a summary has no key, so after a turn that did not end on an
+// answer this one block is told to draw as output (the reader must see it). Imprecision accepted: a redraw of an older summary
+// can move it, which only errs towards output.
+export function summaryTracker() {
+  let last: string | undefined
+  return {
+    drawn(requestId: string): void {
+      last = requestId
+    },
+    start(): void {
+      last = undefined
+    },
+    // The writes a finished turn asks for: the last drawn summary is output unless the turn ended on an answer.
+    complete(reason: string): Write[] {
+      const id = last
+      last = undefined
+      return id === undefined || reason === 'answer' ? [] : [[id, true]]
+    },
+  }
+}

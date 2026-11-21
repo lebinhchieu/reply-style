@@ -3,13 +3,14 @@ import type { Register } from 'claude-code'
 import { drawBlock, drawNote } from './draw'
 import { parseBody } from './markup'
 import { sanitize } from './core'
-import { blockTexts, noteKey, noteTracker } from './notes'
+import { blockTexts, noteKey, noteTracker, summaryTracker } from './notes'
 import type { TextChunk, Write } from './notes'
 import { hasStyled, splitReply } from './segments'
 
 const GUTTER = 2
 
 const tracker = noteTracker()
+const summaries = summaryTracker()
 
 // A failed write leaves the block as output.
 async function write($: any, writes: Write[]) {
@@ -18,6 +19,16 @@ async function write($: any, writes: Write[]) {
       await $.state.set({ plugin: 'reply-style', key: 'isNote', id } as const, isNote)
     } catch {
       // output
+    }
+  }
+}
+
+async function writeSummaries($: any, writes: Write[]) {
+  for (const [id, output] of writes) {
+    try {
+      await $.state.set({ plugin: 'reply-style', key: 'summaryOutput', id } as const, output)
+    } catch {
+      // the summary stays a note
     }
   }
 }
@@ -45,9 +56,15 @@ export const register: Register = (on) => {
     return yield* next(e)
   })
 
+  on('turn.start', async ($, e, next) => {
+    if (e.agentId === undefined) summaries.start()
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
   on('turn.complete', async ($, e, next) => {
     try {
       await write($, tracker.complete(e.turnId, e.reason))
+      if (e.agentId === undefined) await writeSummaries($, summaries.complete(e.reason))
     } catch {
       // as above
     }
@@ -57,9 +74,20 @@ export const register: Register = (on) => {
   // A note is drawn quiet, a reply with a table, a diagram fence, a badge or a callout is drawn here; any other reply is left to the engine.
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
     const { text, isFirstOfReply, isSummary } = e.props as { text: string; isFirstOfReply: boolean; isSummary?: true }
-    if (isSummary) return next(e)
     const { Box, Text, Markdown } = $.ui.resolve(e) as any
     const cols = Math.max(20, (e.viewport?.columns ?? 80) - GUTTER)
+    if (isSummary) {
+      // The engine's one-sentence stand-in for the text between two tool calls: a note, unless its turn did not end on an answer.
+      let output = false
+      try {
+        output = (await $.state.get({ plugin: 'reply-style', key: 'summaryOutput', id: e.requestId } as const)).value === true
+      } catch {
+        output = true
+      }
+      if (output) return next(e)
+      summaries.drawn(e.requestId)
+      return drawNote(text, cols, { Box, Text, Button: null }, true)
+    }
     const key = noteKey(text)
     let note = false
     if (key !== undefined) {

@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { blockTexts, noteKey, noteTracker } from './notes'
+import { blockTexts, noteKey, noteTracker, summaryTracker } from './notes'
 
 const TOOL = [{ name: 'Read' }]
 const key = (t: string) => noteKey(t) as string
@@ -35,4 +35,17 @@ test('an aborted turn turns only its last marked step back to output', () => {
   expect(t.complete('t', 'aborted')).toEqual([[key('second'), false]])
   t.step('u', undefined, ['third'], TOOL)
   expect(t.complete('u', 'answer')).toEqual([])
+})
+
+test('after a turn that did not end on an answer only its last drawn summary is output, and a new turn does not flip it again', () => {
+  const t = summaryTracker()
+  t.drawn('r1')
+  t.drawn('r2')
+  expect(t.complete('answer')).toEqual([])
+  t.drawn('r3')
+  expect(t.complete('aborted')).toEqual([['r3', true]])
+  expect(t.complete('aborted')).toEqual([])
+  t.drawn('r4')
+  t.start()
+  expect(t.complete('aborted')).toEqual([])
 })

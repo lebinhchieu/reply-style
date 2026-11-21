@@ -327,10 +327,32 @@ export function quietNode(node: any, Text: any): any {
   return { ...node, props, ...('children' in node ? { children: quietNode(node.children, Text) } : {}) }
 }
 
-// A whole note block: the gutter `· ` (inactive) on its first row, the body dim.
-export function drawNote(text: string, cols: number, T: T): any {
+// The engine's own mark for a summary, which a hook's tree loses: the plain space may wrap, the mark never splits.
+const SUMMARY_MARK = ' ·\u00a0summary'
+
+// The blocks with the mark after the last text row; after a table, a code fence or a diagram it takes its own row, indented 2.
+function withMark(blocks: Block[]): Block[] {
+  let i = blocks.length - 1
+  while (i >= 0 && blocks[i].type === 'blank') i--
+  if (i < 0) return blocks
+  const last = blocks[i]
+  if (last.type === 'para' || last.type === 'bullet' || last.type === 'number') {
+    const out = blocks.slice(0, i + 1)
+    out[i] = { ...last, spans: [...last.spans, { kind: 'text', text: SUMMARY_MARK }] }
+    return out
+  }
+  return [...blocks.slice(0, i + 1), { type: 'para', spans: [{ kind: 'text', text: `  ${SUMMARY_MARK.trimStart()}` }] }]
+}
+
+// A whole note block: the gutter `· ` (inactive) on its first row, the body dim. A summary block (the engine's stand-in) also ends in
+// the quiet mark ` · summary`; an empty one draws nothing.
+export function drawNote(text: string, cols: number, T: T, isSummary = false): any {
   const { Box, Text } = T
-  const blocks = parseBody(sanitize(text)).map(quietBlock)
+  let blocks = parseBody(sanitize(text)).map(quietBlock)
+  if (isSummary) {
+    if (text.trim() === '') return null
+    blocks = withMark(blocks)
+  }
   const body = blocks.map((b, j) => quietNode(drawBlock(b, cols, T, `n${j}`).node, Text))
   return (
     <Box flexDirection="row">

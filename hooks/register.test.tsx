@@ -19,10 +19,12 @@ test('a plain reply is left to the engine', async ($, on) => {
   await ui.unmount()
 })
 
-test('a summary block is left to the engine', async ($, on) => {
+test('a summary block is drawn as a note with the quiet mark, not by the engine, until its turn ends without an answer', async ($, on) => {
   on('ui.render', ($, e) => { const { Text } = $.ui.resolve(e); return <Text>engine</Text> })
-  const ui = await $.ui.mount(MSG('Build [ok]', { isSummary: true }))
-  expect(await ui.find({ type: 'Text', text: /engine/ })).toBeTruthy()
+  const ui = await $.ui.mount(MSG('Checked both files.', { isSummary: true }))
+  expect(await ui.find({ type: 'Text', text: /^· $/ })).toBeTruthy()
+  expect(await ui.find({ type: 'Text', text: /summary/ })).toBeTruthy()
+  expect(await ui.find({ type: 'Text', text: /engine/ })).toBeFalsy()
   await ui.unmount()
 })
 

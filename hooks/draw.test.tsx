@@ -60,3 +60,11 @@ test('a note is flat dim text under a `· ` gutter: no weight, no colour but the
   expect(shown).toContain('✓ ok')
   expect(shown).toContain('› info Done.')
 })
+
+test('a summary note ends in the whole mark, after a table on its own row, and an empty one draws nothing', () => {
+  const text = (n: any) => JSON.stringify(n)
+  expect(text(drawNote('Checked both files.', 60, T, true))).toContain(' ·\u00a0summary')
+  expect(text(drawNote('| a | b |\n|---|---|\n| 1 | 2 |', 60, T, true))).toContain('"  ·\u00a0summary"')
+  expect(text(drawNote('Checked.', 60, T))).not.toContain('summary')
+  expect(drawNote('  ', 60, T, true)).toBeNull()
+})
