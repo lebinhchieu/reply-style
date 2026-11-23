@@ -7,7 +7,8 @@ import type { InlineWord } from './core'
 
 // A link is `[label](url)` or a bare url (`text` ''); a badge is `[ok]`, `[fail]`, `[warn]`, `[skip]` or a callout word such as `[info]` in mid-line (`text` is the word).
 export type BadgeWord = InlineWord
-export type CalloutTone = 'decision' | 'warning' | 'info'
+// `working` and `summary` are section tags: a line (or heading) starting with one opens a section the model marks skippable or must-read.
+export type CalloutTone = 'decision' | 'warning' | 'info' | 'working' | 'summary'
 export type Span =
   | { kind: 'text' | 'bold' | 'code'; text: string }
   | { kind: 'link'; text: string; url: string }
@@ -27,7 +28,7 @@ export type Block =
 const BR = /<br\s*\/?>/gi
 
 const BADGES: readonly string[] = INLINE_WORDS
-export const CALLOUTS: CalloutTone[] = ['decision', 'warning', 'info']
+export const CALLOUTS: CalloutTone[] = ['decision', 'warning', 'info', 'working', 'summary']
 const isHttp = (u: string) => u.startsWith('http://') || u.startsWith('https://')
 
 // Next index of `ch` at or after `from`, cached: a search is repeated only once `from` has passed the last hit, so the
@@ -197,7 +198,7 @@ function headingLine(line: string): Block | null {
 }
 
 // A list marker ("- ", "1. ") in front of `[rec]` or a callout tag. The tag line is drawn without the marker.
-export const MARKER_BULLET = /^([-*+]|\d+[.)])\s+(?=\[(rec|decision|warning|info)\](\s|$))/
+export const MARKER_BULLET = /^([-*+]|\d+[.)])\s+(?=\[(rec|decision|warning|info|working|summary)\](\s|$))/
 
 // The body as blocks, one per source line except a fenced block or a table. Never throws.
 export function parseBody(text: string): Block[] {

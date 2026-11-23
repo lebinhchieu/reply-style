@@ -1,10 +1,11 @@
 {
   "name": "reply-style",
-  "version": "0.1.8",
+  "version": "0.2.0",
   "description": "Draws an agent's chat reply with highlighted tables, diagrams, state badges and callouts (the squad PO inbox look), in any project.",
-  "author": { "name": "Chieu Le" },
+  "author": {
+    "name": "Chieu Le"
+  },
   "homepage": "https://github.com/lebinhchieu/reply-style",
   "repository": "https://github.com/lebinhchieu/reply-style",
-  "license": "MIT",
-  "types": "./types/index.d.ts"
+  "license": "MIT"
 }

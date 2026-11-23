@@ -1,8 +1,7 @@
 // Drawing of a reply's structured parts: inline spans, tables, diagrams, callouts. Began as a copy of the squad po-inbox mod.
 // Pure functions of props, no `$`. Colour is a theme key (TONE, INFO, CODE, QUIET) or weight only (V-15, V-18, body-styles.md 9.5). Every function that
 // draws rows also says how many rows it drew, by the same `rowsFor` the screen uses for its cut (T9 v3).
-import { parseBody } from './markup'
-import { badgeProps, badgeText, BOX_RE, calloutChip, CHIPS, chipText, CODE, cellWidth, DIAGRAM_TAGS, diagramRuns, QUIET, rowsFor, sanitize, STRIPE, tableLayout, TONE, wrapRows } from './core'
+import { badgeProps, badgeText, BOX_RE, calloutChip, CHIPS, chipText, CODE, cellWidth, DIAGRAM_TAGS, diagramRuns, QUIET, rowsFor, STRIPE, tableLayout, TONE, wrapRows } from './core'
 import type { DiagramRun } from './core'
 import type { Block, Span } from './markup'
 
@@ -269,7 +268,7 @@ const STATUS_W = Math.max(...DIAGRAM_TAGS.map((t) => cellWidth(chipText(t))))
 
 // A callout or `[rec]` row: the label chip, then the text. The text wraps under column 0 of the row, as in the PO inbox.
 // `[decision]` and `[rec]` keep their sentence bold. `indent` is a counted pad of no-break spaces.
-function calloutRow(b: { spans: Span[]; indent?: number }, word: 'decision' | 'warning' | 'info' | 'rec', cols: number, T: T, key: string): Drawn {
+function calloutRow(b: { spans: Span[]; indent?: number }, word: 'decision' | 'warning' | 'info' | 'working' | 'summary' | 'rec', cols: number, T: T, key: string): Drawn {
   const { Text } = T
   const chip = calloutChip(word)
   const rest = drawnText(b.spans)
@@ -286,80 +285,4 @@ function calloutRow(b: { spans: Span[]; indent?: number }, word: 'decision' | 'w
     ),
     rows: rowsFor(`${pad}${chip}${rest === '' ? '' : ' '}${rest}`, cols),
   }
-}
-
-// --- working notes: the quiet look (ui-design/02.md) ----------------------------------------------------------------------
-// A note is the same layout as output with every part flat: plain text, `dimColor`, no fill, no weight, no colour.
-
-const flat = (spans: Span[]): Span[] => spans.map((s): Span => (s.kind === 'badge' ? { kind: 'text', text: badgeText(s.text) } : s.kind === 'link' ? s : { kind: 'text', text: s.text }))
-const flatCell = (cells: Span[][]): Span[][] => cells.map(flat)
-
-// The block with its styled parts turned into plain text: a badge is `✓ ok` (no padding), a callout `› info` then its sentence.
-export function quietBlock(b: Block): Block {
-  switch (b.type) {
-    case 'blank':
-    case 'code':
-      return b
-    case 'heading':
-      return { type: 'para', spans: flat(b.spans) }
-    case 'rec':
-      return { type: 'para', spans: [{ kind: 'text', text: `${badgeText('rec').replace('rec', 'recommended')}${b.spans.length ? ' ' : ''}` }, ...flat(b.spans)] }
-    case 'callout':
-      return { type: 'para', spans: [{ kind: 'text', text: `${badgeText(b.tone)}${b.spans.length ? ' ' : ''}` }, ...flat(b.spans)] }
-    case 'table':
-      return { type: 'table', header: flatCell(b.header), rows: b.rows.map(flatCell) }
-    default:
-      return { ...b, spans: flat(b.spans) }
-  }
-}
-
-const LOUD = ['bold', 'italic', 'underline', 'inverse', 'color', 'backgroundColor']
-
-// The element tree with every Text dim and plain. `Text` is the component the tree was drawn with.
-export function quietNode(node: any, Text: any): any {
-  if (Array.isArray(node)) return node.map((n) => quietNode(n, Text))
-  if (node === null || typeof node !== 'object' || !('type' in node)) return node
-  const props: Record<string, unknown> = { ...node.props }
-  const isText = node.type === Text || node.type === 'Text'
-  if (isText) for (const k of LOUD) delete props[k]
-  if (isText) props.dimColor = true
-  // The engine's elements hold their children beside `props`, not in it.
-  return { ...node, props, ...('children' in node ? { children: quietNode(node.children, Text) } : {}) }
-}
-
-// The engine's own mark for a summary, which a hook's tree loses: the plain space may wrap, the mark never splits.
-const SUMMARY_MARK = ' ·\u00a0summary'
-
-// The blocks with the mark after the last text row; after a table, a code fence or a diagram it takes its own row, indented 2.
-function withMark(blocks: Block[]): Block[] {
-  let i = blocks.length - 1
-  while (i >= 0 && blocks[i].type === 'blank') i--
-  if (i < 0) return blocks
-  const last = blocks[i]
-  if (last.type === 'para' || last.type === 'bullet' || last.type === 'number') {
-    const out = blocks.slice(0, i + 1)
-    out[i] = { ...last, spans: [...last.spans, { kind: 'text', text: SUMMARY_MARK }] }
-    return out
-  }
-  return [...blocks.slice(0, i + 1), { type: 'para', spans: [{ kind: 'text', text: `  ${SUMMARY_MARK.trimStart()}` }] }]
-}
-
-// A whole note block: the gutter `· ` (inactive) on its first row, the body dim. A summary block (the engine's stand-in) also ends in
-// the quiet mark ` · summary`; an empty one draws nothing.
-export function drawNote(text: string, cols: number, T: T, isSummary = false): any {
-  const { Box, Text } = T
-  let blocks = parseBody(sanitize(text)).map(quietBlock)
-  if (isSummary) {
-    if (text.trim() === '') return null
-    blocks = withMark(blocks)
-  }
-  const body = blocks.map((b, j) => quietNode(drawBlock(b, cols, T, `n${j}`).node, Text))
-  return (
-    <Box flexDirection="row">
-      <Box key="gutter" width={2} flexShrink={0}>
-        <Text color={QUIET}>{'· '}</Text>
-      </Box>
-      <Box key="body" flexDirection="column" flexShrink={1}>{body}</Box>
-    </Box>
-  )
 }

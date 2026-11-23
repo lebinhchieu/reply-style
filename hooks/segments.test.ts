@@ -58,3 +58,14 @@ test('an unclosed fence keeps everything after it', () => {
   expect(segs).toHaveLength(1)
   expect(segs[0].text).toContain('[ok] done')
 })
+
+test('a [working] or [summary] tag opens a section at a line, alone on its line, or in a heading; mid-line it is a chip', () => {
+  const blocks = parseBody('[working] Read the files.\nmore detail\n[summary]\nAll green.')
+  expect(blocks.map((b) => b.type)).toEqual(['callout', 'para', 'callout', 'para'])
+  expect(blocks[0]).toMatchObject({ tone: 'working' })
+  expect(blocks[2]).toMatchObject({ tone: 'summary', spans: [] })
+  expect(hasStyled(splitReply('## [summary] Result'))).toBe(true)
+  expect((parseBody('## [summary] Result')[0] as { spans: unknown[] }).spans[0]).toMatchObject({ kind: 'badge', text: 'summary' })
+  expect(parseInline('see [working] above').some((x) => x.kind === 'badge')).toBe(true)
+  expect(chipText('summary')).toBe('\u00a0●\u00a0summary\u00a0')
+})
