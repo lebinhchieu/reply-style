@@ -12,7 +12,7 @@ export type CalloutTone = 'decision' | 'warning' | 'info' | 'working' | 'summary
 export type Span =
   | { kind: 'text' | 'bold' | 'code'; text: string }
   | { kind: 'link'; text: string; url: string }
-  | { kind: 'badge'; text: BadgeWord }
+  | { kind: 'badge'; text: BadgeWord; n?: number }
 
 export type Block =
   | { type: 'heading'; level: 1 | 2 | 3; spans: Span[] }
@@ -21,7 +21,7 @@ export type Block =
   | { type: 'code'; lang: string; lines: string[] }
   | { type: 'table'; header: Span[][]; rows: Span[][][] }
   | { type: 'rec'; spans: Span[]; indent?: number }
-  | { type: 'callout'; tone: CalloutTone; spans: Span[]; indent?: number }
+  | { type: 'callout'; tone: CalloutTone; spans: Span[]; indent?: number; n?: number }
   | { type: 'para'; spans: Span[] }
   | { type: 'blank' }
 
@@ -29,6 +29,10 @@ const BR = /<br\s*\/?>/gi
 
 const BADGES: readonly string[] = INLINE_WORDS
 export const CALLOUTS: CalloutTone[] = ['decision', 'warning', 'info', 'working', 'summary']
+// A summary tag may carry its count since the user's last prompt: `[summary 2]`. The label inside the brackets, matched whole.
+export const SUMMARY_N = /^summary (\d{1,3})$/
+// The same tag at the start of a line, then a space or the line end.
+export const SUMMARY_N_LINE = /^\[summary (\d{1,3})\](?=\s|$)/
 const isHttp = (u: string) => u.startsWith('http://') || u.startsWith('https://')
 
 // Next index of `ch` at or after `from`, cached: a search is repeated only once `from` has passed the last hit, so the
@@ -110,6 +114,11 @@ export function parseInline(line: string): Span[] {
           i = paren + 1
           continue
         }
+      } else if (clean && SUMMARY_N.test(line.slice(i + 1, close))) {
+        flush()
+        out.push({ kind: 'badge', text: 'summary', n: Number((SUMMARY_N.exec(line.slice(i + 1, close)) as RegExpExecArray)[1]) })
+        i = close + 1
+        continue
       } else if (clean && BADGES.includes(line.slice(i + 1, close))) {
         flush()
         out.push({ kind: 'badge', text: line.slice(i + 1, close) as BadgeWord })
@@ -198,7 +207,7 @@ function headingLine(line: string): Block | null {
 }
 
 // A list marker ("- ", "1. ") in front of `[rec]` or a callout tag. The tag line is drawn without the marker.
-export const MARKER_BULLET = /^([-*+]|\d+[.)])\s+(?=\[(rec|decision|warning|info|working|summary)\](\s|$))/
+export const MARKER_BULLET = /^([-*+]|\d+[.)])\s+(?=\[(rec|decision|warning|info|working|summary|summary \d{1,3})\](\s|$))/
 
 // The body as blocks, one per source line except a fenced block or a table. Never throws.
 export function parseBody(text: string): Block[] {
@@ -235,12 +244,14 @@ export function parseBody(text: string): Block[] {
         continue
       }
     }
+    const counted = SUMMARY_N_LINE.exec(trimmed)
+    const indent = line.length - line.trimStart().length
     const callout = CALLOUTS.find((t) => trimmed.startsWith(`[${t}]`) && (trimmed.length === t.length + 2 || isSpace(trimmed[t.length + 2])))
     if (trimmed.startsWith('[rec]') && (trimmed.length === 5 || isSpace(trimmed[5]))) {
-      const indent = line.length - line.trimStart().length
       blocks.push({ type: 'rec', spans: parseInline(trimmed.slice(5).trim()), ...(indent > 0 ? { indent } : {}) })
+    } else if (counted !== null) {
+      blocks.push({ type: 'callout', tone: 'summary', n: Number(counted[1]), spans: parseInline(trimmed.slice(counted[0].length).trim()), ...(indent > 0 ? { indent } : {}) })
     } else if (callout !== undefined) {
-      const indent = line.length - line.trimStart().length
       blocks.push({ type: 'callout', tone: callout, spans: parseInline(trimmed.slice(callout.length + 2).trim()), ...(indent > 0 ? { indent } : {}) })
     } else {
       blocks.push(headingLine(line) ?? listLine(line) ?? { type: 'para', spans: parseInline(line.trimEnd()) })

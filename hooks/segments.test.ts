@@ -68,4 +68,9 @@ test('a [working] or [summary] tag opens a section at a line, alone on its line,
   expect((parseBody('## [summary] Result')[0] as { spans: unknown[] }).spans[0]).toMatchObject({ kind: 'badge', text: 'summary' })
   expect(parseInline('see [working] above').some((x) => x.kind === 'badge')).toBe(true)
   expect(chipText('summary')).toBe('\u00a0●\u00a0summary\u00a0')
+  // a counted summary tag, `[summary 2]`, is the same section, carrying its number
+  expect(hasStyled(splitReply('[summary 2] Done.'))).toBe(true)
+  expect(parseBody('[summary 2] Done.')[0]).toMatchObject({ type: 'callout', tone: 'summary', n: 2 })
+  expect(parseInline('## see [summary 3]')).toContainEqual({ kind: 'badge', text: 'summary', n: 3 })
+  expect(chipText('summary', 2)).toBe('\u00a0●\u00a0summary\u00a02\u00a0')
 })
