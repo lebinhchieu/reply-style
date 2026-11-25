@@ -35,7 +35,7 @@ export const toneProps = (t: string): Record<string, unknown> =>
 // What a span list draws as plain text: inline code is its text, no padding (the plain spaces of the sentence stay);
 // a link is `label <url>` (a bare url is itself); a badge is its padded chip ` ✓ ok `.
 const spanDrawn = (s: Span): string =>
-  s.kind === 'link' ? (s.text === '' ? s.url : `${s.text} <${s.url}>`) : s.kind === 'badge' ? chipText(s.text) : s.text
+  s.kind === 'link' ? (s.text === '' ? s.url : `${s.text} <${s.url}>`) : s.kind === 'badge' ? chipText(s.text, s.n) : s.text
 const drawnText = (spans: Span[]): string => spans.map(spanDrawn).join('')
 
 export function drawSpans(spans: Span[], T: T, base = ''): any[] {
@@ -44,7 +44,7 @@ export function drawSpans(spans: Span[], T: T, base = ''): any[] {
     const key = `${base}s${i}`
     if (s.kind === 'bold') return <Text key={key} bold>{s.text}</Text>
     if (s.kind === 'code') return <Text key={key} bold color={CODE}>{s.text}</Text>
-    if (s.kind === 'badge') return <Text key={key} {...badgeProps(CHIPS[s.text].tone)}>{chipText(s.text)}</Text>
+    if (s.kind === 'badge') return <Text key={key} {...badgeProps(CHIPS[s.text].tone)}>{chipText(s.text, s.n)}</Text>
     if (s.kind === 'link') {
       // The url is always shown: a pane cannot open it, and no escape sequence leaves the pane.
       return s.text === '' ? (
@@ -227,7 +227,7 @@ export function drawBlock(b: Block, cols: number, T: T, key: string): Drawn {
     case 'rec':
       return calloutRow(b, 'rec', cols, T, key)
     case 'callout':
-      return calloutRow(b, b.tone, cols, T, key)
+      return calloutRow(b, b.tone, cols, T, key, b.n)
     case 'bullet':
     case 'number': {
       const indent = ' '.repeat(indentFor(b.depth, cols))
@@ -237,13 +237,13 @@ export function drawBlock(b: Block, cols: number, T: T, key: string): Drawn {
       const first = b.spans[0]
       if (b.type === 'bullet' && first !== undefined && first.kind === 'badge') {
         // A status bullet: the chip is padded to the widest chip plus one space, so the texts line up.
-        const pad = NBSP.repeat(Math.max(0, STATUS_W - cellWidth(chipText(first.text))) + 1)
+        const pad = NBSP.repeat(Math.max(0, STATUS_W - cellWidth(chipText(first.text, first.n))) + 1)
         const rest = b.spans.slice(1)
         const head = rest[0]
         if (head !== undefined && head.kind === 'text') rest[0] = { ...head, text: head.text.replace(/^ /, '') }
         return {
           node: hanging(key, <Text key="m">{prefix}</Text>, pw, <Text key="t" wrap="wrap">{drawSpans([first], T, key)}{pad}{drawSpans(rest, T, `${key}r`)}</Text>, T),
-          rows: rowsFor(`${chipText(first.text)}${pad}${drawnText(rest)}`, Math.max(1, cols - pw)),
+          rows: rowsFor(`${chipText(first.text, first.n)}${pad}${drawnText(rest)}`, Math.max(1, cols - pw)),
         }
       }
       return {
@@ -268,9 +268,9 @@ const STATUS_W = Math.max(...DIAGRAM_TAGS.map((t) => cellWidth(chipText(t))))
 
 // A callout or `[rec]` row: the label chip, then the text. The text wraps under column 0 of the row, as in the PO inbox.
 // `[decision]` and `[rec]` keep their sentence bold. `indent` is a counted pad of no-break spaces.
-function calloutRow(b: { spans: Span[]; indent?: number }, word: 'decision' | 'warning' | 'info' | 'working' | 'summary' | 'rec', cols: number, T: T, key: string): Drawn {
+function calloutRow(b: { spans: Span[]; indent?: number }, word: 'decision' | 'warning' | 'info' | 'working' | 'summary' | 'rec', cols: number, T: T, key: string, n?: number): Drawn {
   const { Text } = T
-  const chip = calloutChip(word)
+  const chip = calloutChip(word, n)
   const rest = drawnText(b.spans)
   const pad = NBSP.repeat(Math.min(b.indent ?? 0, 8))
   const words = drawSpans(b.spans, T, key)

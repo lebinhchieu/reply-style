@@ -62,11 +62,12 @@ export const badgeText = (word: InlineWord): string => `${CHIPS[word].glyph}\u00
 
 // A filled badge in prose, a table cell or a bullet: one no-break space of padding each side, ` ✓ ok `.
 // A callout word in mid-line is the same kind of chip, ` › info `; `rec` stays short there (` ✓ rec `).
-export const chipText = (word: InlineWord): string => `\u00a0${badgeText(word)}\u00a0`
+// `n` is the count a summary tag carries (`[summary 2]`): ` ● summary 2 `.
+export const chipText = (word: InlineWord, n?: number): string => `\u00a0${badgeText(word)}${n === undefined ? '' : `\u00a0${n}`}\u00a0`
 
 // A callout label chip: ` ◆ decision `, ` ⚠ warning `, ` › info `, ` ✓ recommended `; a section tag: ` ○ working `, ` ● summary `.
-export const calloutChip = (word: 'decision' | 'warning' | 'info' | 'working' | 'summary' | 'rec'): string =>
-  `\u00a0${CHIPS[word].glyph}\u00a0${word === 'rec' ? 'recommended' : word}\u00a0`
+export const calloutChip = (word: 'decision' | 'warning' | 'info' | 'working' | 'summary' | 'rec', n?: number): string =>
+  `\u00a0${CHIPS[word].glyph}\u00a0${word === 'rec' ? 'recommended' : word}${n === undefined ? '' : `\u00a0${n}`}\u00a0`
 
 // A box-drawing character: a fence holding one is a diagram.
 export const BOX_RE = /[\u2500-\u257f]/

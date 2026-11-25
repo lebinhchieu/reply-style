@@ -1,7 +1,7 @@
 // Splits a reply into stretches the engine's own markdown draws ('md') and stretches this mod draws ('styled'):
 // a table, a diagram fence, a callout or `[rec]` line, any line holding a state badge, and a whole bullet list when one item holds a badge. Pure: no `$`.
 import { BOX_RE } from './core'
-import { CALLOUTS, MARKER_BULLET, cellsOf, isFenceEnd, isSeparator, isSpace, parseInline } from './markup'
+import { CALLOUTS, MARKER_BULLET, SUMMARY_N_LINE, cellsOf, isFenceEnd, isSeparator, isSpace, parseInline } from './markup'
 
 export type Segment = { kind: 'md' | 'styled'; text: string }
 
@@ -15,7 +15,7 @@ function isDiagramFence(lang: string, lines: string[]): boolean {
 
 function isMarkerLine(trimmed: string): boolean {
   const words = ['rec', ...CALLOUTS]
-  return words.some((w) => trimmed.startsWith(`[${w}]`) && (trimmed.length === w.length + 2 || isSpace(trimmed[w.length + 2])))
+  return SUMMARY_N_LINE.test(trimmed) || words.some((w) => trimmed.startsWith(`[${w}]`) && (trimmed.length === w.length + 2 || isSpace(trimmed[w.length + 2])))
 }
 
 const BULLET = /^\s*([-*+]|\d+[.)])\s/
